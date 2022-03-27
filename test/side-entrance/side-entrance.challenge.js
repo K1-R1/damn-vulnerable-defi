@@ -25,6 +25,17 @@ describe('[Challenge] Side entrance', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        /**
+         * EXPLOIT:
+         * The pool does not utilise it's balance variable in the flash loan,
+         * and does not prevent reentrance.
+         * 
+         * As such the external call can be utilised by a malicious contract
+         * to deposit the loaned ether back to the pool. This passes the loans checks
+         * whilst increasing the attacker's balance.
+         * 
+         * The attacker can then withdraw the loaned amount for free.
+         */
 
         const AttackFactory = await ethers.getContractFactory('Attack', attacker);
         this.attackContract = await AttackFactory.deploy(this.pool.address);
