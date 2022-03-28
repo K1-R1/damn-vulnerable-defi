@@ -32,6 +32,18 @@ describe('[Challenge] Selfie', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
 
+        /**
+         * EXPLOIT:
+         * 
+         * The governance is vulnerable to a flash loan attack,
+         * as an attacker can pass the checks to queue an action with the loaned tokens.
+         * 
+         * The attacker can repay the loan,
+         * wait for the governance delay to elapse,
+         * and then extecute the action,
+         * which can call the `drainAllFunds` method on the pool.
+         */
+
         const AttackFactory = await ethers.getContractFactory('AttackSelfie', attacker);
         this.attackContract = await AttackFactory.deploy(
             this.token.address,
