@@ -72,9 +72,9 @@ describe('Compromised challenge', function () {
             return privateKey
         })
 
-        // const compromisedWallets = privateKeys.map(pk => new ethers.Wallet(pk, ethers.provider))
+        const compromisedWallets = privateKeys.map(pk => new ethers.Wallet(pk, ethers.provider))
 
-        console.log(`${privateKeys}`)
+        // console.log(`${compromisedWallets.map(acc => acc.address)}`)
 
 
 
