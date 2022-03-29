@@ -104,6 +104,15 @@ describe('[Challenge] Puppet', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
 
+        /**
+         * EXPLOIT:
+         * 
+         * As the Uniswap exchange is used as the price oracle,
+         * a large transfer that inbalances the exchange reserves
+         * will allow an attacker to borrow all the DVT in the pool
+         * as the DVT/ETH price from the Uniswap exchange will be lowered
+         */
+
 
         //exchange DVT for ETH
         const tokensToSell = ethers.utils.parseEther("750")
