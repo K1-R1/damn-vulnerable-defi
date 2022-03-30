@@ -52,7 +52,7 @@ contract AttackFreeRider {
         address _operator,
         address _from,
         uint256 _tokenId,
-        bytes _data
+        bytes memory _data
     ) external returns (bytes4) {
         return
             bytes4(
