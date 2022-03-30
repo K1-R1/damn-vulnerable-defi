@@ -106,6 +106,23 @@ describe('[Challenge] Free Rider', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
 
+        /**
+         * EXPLOT:
+         * 
+         * The NFT marketplace has a bug in its `_buyOne` method.
+         * The bug is that the NFT is transfered using `safeTransferFrom`
+         * which sets the buyer as the owner.
+         * Then the ETH value of the purchase is suppossed to be sent to the seller,
+         * however it is sent to the owner of the NFT which was just tranferred, 
+         * as such the owner is now the buyer of the NFT.
+         * As such the buyer gains both the NFT and receives the payment for the sale.
+         * 
+         * Therefore the attacker only needs enough to be buy 1 NFT, 
+         * as they will receive the purchase value back.
+         * 
+         * The attacker can get enough ETH to buy an NFT via the Uniswap pair's
+         * flash swap
+         */
 
         //deploy attack contract
         this.attackContract = await (await ethers.getContractFactory('AttackFreeRider', attacker)).deploy(
