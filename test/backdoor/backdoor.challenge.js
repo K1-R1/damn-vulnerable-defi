@@ -38,16 +38,38 @@ describe('[Challenge] Backdoor', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
 
-        //deploy attack contract
-        this.attackContract = await (await ethers.getContractFactory('AttackRegistry', attacker)).deploy(
-            this.walletFactory.address,
-            this.masterCopy.address,
-            this.walletRegistry.address,
-            this.token.address
-        );
+        /**
+         * EXPLOIT:
+         * 
+         * During deployment of a new Gnosis proxy wallet,
+         * a delegated call can be made that gives an
+         * attacker access to the context of the new wallet.
+         * 
+         * As such an attacker can create a malicous contract that will
+         * approve the transfer of all tokens, as this logic is called via a
+         * delegateCall, the approval occurs on behalf of the wallet.
+         * 
+         * As the beneficiaries specified in the walletRegistry have not
+         * registered their wallets yet, an attacker can register wallets on
+         * their behalf and include the malicous delegateCall during the setup.
+         * The attacker specifies the walletRegistry as the destination of the callback
+         * during the wallet deployment, causing the walletRegistry to send the DVT tokens
+         * to the compromised wallets.
+         * 
+         * The attacker can then comlete the transfer of the tokens.
+         */
 
-        //initiate attack
-        this.attackContract.attack(users)
+        //Deploy attack contract
+        this.attackContract = await (
+            await ethers.getContractFactory('AttackRegistry', attacker)
+        ).deploy(this.walletFactory.address,
+            this.walletRegistry.address,
+            this.masterCopy.address,
+            this.token.address);
+
+        //Begin attack
+        await this.attackContract.attack(attacker.address, users, ethers.utils.parseEther("10"));
+
     });
 
     after(async function () {
