@@ -54,6 +54,20 @@ describe('[Challenge] Climber', function () {
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
 
+        /**
+         * EXPLOIT:
+         * 
+         * In order to sweep all the funds in the vault
+         * the attacker must claim ownership of the proxy in order to
+         * upgrade to a new implementation contract in which the 
+         * the function to sweep the funds is callable by the owner,
+         * which is now the attacker
+         * 
+         * As the timelock starts as the owner, the attacker must 
+         * utilise calling the transferOwnership call on the proxy
+         * on behalf of the timelock.
+         */
+
         //deploy attack contract
         this.attackerContract = await (await ethers.getContractFactory('AttackClimber', attacker)).deploy(
             this.timelock.address,
