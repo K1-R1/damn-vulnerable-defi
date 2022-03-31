@@ -17,11 +17,7 @@ contract AttackersVault is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() initializer {}
 
-    function initialize(
-        address admin,
-        address proposer,
-        address sweeper
-    ) external initializer {
+    function initialize() external initializer {
         // Initialize inheritance chain
         __Ownable_init();
         __UUPSUpgradeable_init();
