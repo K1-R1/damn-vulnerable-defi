@@ -82,6 +82,10 @@ describe('[Challenge] Climber', function () {
          * in such a way that the attacker gains proposer privelages 
          * and can therefore schedule the tasks after they occurred.
          * This will bypass the requirements of the execute function.
+         * 
+         * Once the attacker has claimed ownership of the proxy,
+         * they can upgrade to a new vault implementation in which
+         * they are the owner, and can all a function to sweep the vault.
          */
 
         //deploy attack contract
