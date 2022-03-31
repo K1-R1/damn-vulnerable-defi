@@ -74,6 +74,14 @@ describe('[Challenge] Climber', function () {
          * 2. Grant proposer role to this contract
          * 3. Tranfer ownership of ClimberVault to this contract
          * 4. Schedule the above tasks indirectly
+         * 
+         * This is possible as the timelock's execute function
+         * contains a bug; it performs the tasks before it checks
+         * that the tasks were properly secheduled.
+         * As such the attacker can perform the above sequence of tasks
+         * in such a way that the attacker gains proposer privelages 
+         * and can therefore schedule the tasks after they occurred.
+         * This will bypass the requirements of the execute function.
          */
 
         //deploy attack contract
