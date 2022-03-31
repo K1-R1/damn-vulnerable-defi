@@ -29,6 +29,7 @@ contract AttackClimber {
     bytes32 private salt = bytes32(uint256(1));
 
     constructor(address _climberTimelock, address _vault) {
+        owner = msg.sender;
         climberTimelock = IClimberTimelock(_climberTimelock);
         vault = _vault;
     }
