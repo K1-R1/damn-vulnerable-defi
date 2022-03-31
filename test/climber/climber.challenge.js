@@ -18,12 +18,12 @@ describe('[Challenge] Climber', function () {
         expect(
             await ethers.provider.getBalance(attacker.address)
         ).to.equal(ethers.utils.parseEther('0.1'));
-        
+
         // Deploy the vault behind a proxy using the UUPS pattern,
         // passing the necessary addresses for the `ClimberVault::initialize(address,address,address)` function
         this.vault = await upgrades.deployProxy(
             await ethers.getContractFactory('ClimberVault', deployer),
-            [ deployer.address, proposer.address, sweeper.address ],
+            [deployer.address, proposer.address, sweeper.address],
             { kind: 'uups' }
         );
 
@@ -31,13 +31,13 @@ describe('[Challenge] Climber', function () {
         expect(await this.vault.getLastWithdrawalTimestamp()).to.be.gt('0');
         expect(await this.vault.owner()).to.not.eq(ethers.constants.AddressZero);
         expect(await this.vault.owner()).to.not.eq(deployer.address);
-        
+
         // Instantiate timelock
         let timelockAddress = await this.vault.owner();
         this.timelock = await (
             await ethers.getContractFactory('ClimberTimelock', deployer)
         ).attach(timelockAddress);
-        
+
         // Ensure timelock roles are correctly initialized
         expect(
             await this.timelock.hasRole(await this.timelock.PROPOSER_ROLE(), proposer.address)
@@ -51,8 +51,60 @@ describe('[Challenge] Climber', function () {
         await this.token.transfer(this.vault.address, VAULT_TOKEN_BALANCE);
     });
 
-    it('Exploit', async function () {        
+    it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        /**
+         * EXPLOIT:
+         * 
+         * In order to sweep all the funds in the vault
+         * the attacker must claim ownership of the proxy in order to
+         * upgrade to a new implementation contract in which the 
+         * the function to sweep the funds is callable by the owner,
+         * which is now the attacker
+         * 
+         * As the timelock starts as the owner, the attacker must 
+         * utilise calling the transferOwnership call on the proxy
+         * on behalf of the timelock.
+         * 
+         * This can be acheived by calling the execute function on 
+         * the timelock with parameters that perform a sequence of tasks
+         * in order to claim ownership of the proxy.
+         * 1. Reduce timelock deplay to 0
+         * 2. Grant proposer role to this contract
+         * 3. Tranfer ownership of ClimberVault to this contract
+         * 4. Schedule the above tasks indirectly
+         * 
+         * This is possible as the timelock's execute function
+         * contains a bug; it performs the tasks before it checks
+         * that the tasks were properly secheduled.
+         * As such the attacker can perform the above sequence of tasks
+         * in such a way that the attacker gains proposer privelages 
+         * and can therefore schedule the tasks after they occurred.
+         * This will bypass the requirements of the execute function.
+         * 
+         * Once the attacker has claimed ownership of the proxy,
+         * they can upgrade to a new vault implementation in which
+         * they are the owner, and can all a function to sweep the vault.
+         */
+
+        //deploy attack contract
+        this.attackerContract = await (await ethers.getContractFactory('AttackClimber', attacker)).deploy(
+            this.timelock.address,
+            this.vault.address
+        )
+
+        //start attack
+        await this.attackerContract.attack()
+
+        //upgrade to attacker's vault
+        this.attackersVault = await upgrades.upgradeProxy(
+            this.vault.address,
+            await ethers.getContractFactory('AttackersVault', attacker)
+        )
+
+        //steal funds via attacker's vault
+        await this.attackersVault.sweepFunds(this.token.address)
     });
 
     after(async function () {

