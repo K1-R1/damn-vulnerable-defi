@@ -66,6 +66,14 @@ describe('[Challenge] Climber', function () {
          * As the timelock starts as the owner, the attacker must 
          * utilise calling the transferOwnership call on the proxy
          * on behalf of the timelock.
+         * 
+         * This can be acheived by calling the execute function on 
+         * the timelock with parameters that perform a sequence of tasks
+         * in order to claim ownership of the proxy.
+         * 1. Reduce timelock deplay to 0
+         * 2. Grant proposer role to this contract
+         * 3. Tranfer ownership of ClimberVault to this contract
+         * 4. Schedule the above tasks indirectly
          */
 
         //deploy attack contract
